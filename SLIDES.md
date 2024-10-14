@@ -1,8 +1,13 @@
- # Eclipse Store
-
-A relational in-memory database that doesn't use SQL
-
-<!-- end_slide -->
+---
+title: Eclipse Store
+sub_title: A relational in-memory database that doesn't use SQL
+theme:
+  override:
+    footer:
+      style: template
+      center: https://github.com/Bios-Marcel/presentation_eclipse_store
+      right: "{current_slide} / {total_slides}"
+---
 
 ## Concept
 
