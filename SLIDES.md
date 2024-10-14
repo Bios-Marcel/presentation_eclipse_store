@@ -20,6 +20,7 @@ A relational in-memory database that doesn't use SQL
 
 ## Pros
 
+* **You have almost total control over everything that happens**
 * Extremly fast read access
 * Rather fast writes
 * Querying via Java, instead of SQL
@@ -31,6 +32,7 @@ A relational in-memory database that doesn't use SQL
 
 ## Cons
 
+* **You have almost total control over everything that happens**
 * No traditional transactions on the domain object level
 * No traditional database constraints
 * Any mutations affect the live data
@@ -49,6 +51,7 @@ A relational in-memory database that doesn't use SQL
 
 ## Basic Overview of Concepts
 
+* No tables, just Java objects
 * Custom binary serialisation format
   * Types are parsed upon server start and are written into a "type dictionary"
   * written data is chunked into binary blobs
@@ -59,28 +62,248 @@ A relational in-memory database that doesn't use SQL
 
 <!-- end_slide -->
 
-## Usage in its Simples Form
+## Comparison to SQL - The Schema
 
-BEWARE, PSEUDO CODE!
+BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
+
+<!-- column_layout: [10,1,10] -->
+
+<!-- column: 0 -->
+
+```sql
+CREATE SCHEMA 'schema';
+
+CREATE TABLE 'user' (
+  'id' UUID PRIMARY KEY,
+  'name' TEXT);
+CREATE TABLE 'note' (
+  'id' UUID PRIMARY KEY, 
+  'user_id' UUID FOREIGN KEY('user'.'id'),
+  'name' TEXT,
+  'content' TEXT);
+```
+
+<!-- column: 1 -->
+
+VS
+
+<!-- column: 2 -->
 
 ```java
-final EmbeddedStorageManager manager = ...;
+class Schema {
+  class User {
+    UUID id;
+    String name;
+    List<Note> notes;
+  }
+  class Note {
+    UUID id;
+    String name;
+    String content;
+  }
 
-// Atomic operation to store everything in one "transaction".
-final var storer = manager.createLazyStorer();
-
-final var root = manager.root();
-
-root.elementA.field = "new value";
-root.elementC.field = "new value 2";
-
-storer.store(elementA);
-storer.store(elementC);
-
-storer.commit();
-
-elementA.field = "MUTATION!";
-Reloader.New( manager.persistenceManager() ).reloadFlat(elementA);
-
-// elementA.field == "new value";
+  List<User> users;
+}
 ```
+<!-- reset_layout -->
+
+<!-- end_slide -->
+
+## Comparison to SQL - Inserting Data
+
+BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
+
+<!-- column_layout: [15,1,10] -->
+
+<!-- column: 0 -->
+
+```sql
+BEGIN TRANSACTION;
+
+INSERT INTO 'user' (user_id, 'marcel');
+INSERT INTO 'notes' (note_id, user_id, 'TODO', 'Prepare the talk ASAP!')
+
+COMMIT TRANSACTION;
+```
+
+```java
+connection.beginTransaction();
+
+final var userId = UUID.random();
+connection
+        .prepareStatement("INSERT INTO 'user' ($1, $2)")
+        .put("$1", userId)
+        .put("$2", "marcel")
+        .execute();
+
+connection
+        .prepareStatement("INSERT INTO 'note' ($1, $2, $3, $4)")
+        .put("$1", UUID.random())
+        .put("$2", userId)
+        .put("$3", "TODO")
+        .put("$4", "Prepare the talk ASAP!")
+        .execute();
+
+connection.commit();
+```
+
+<!-- column: 1 -->
+
+VS
+
+<!-- column: 2 -->
+
+```java
+final var user = new User(
+        UUID.random(),
+        "marcel"
+);
+user.notes().add(
+        new Note(
+            UUID.random(),
+            user.id,
+            "TODO",
+            "Prepare the talk ASAP!"
+        )
+);
+schema.users.add(user);
+
+final var storer = manager.createStorer();
+storer.store(schema.users);
+storer.commit();
+```
+
+<!-- reset_layout -->
+
+<!-- end_slide -->
+
+## Comparison to SQL - Rollbacks
+
+BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
+
+<!-- column_layout: [10,1,10] -->
+
+<!-- column: 0 -->
+
+```java
+connection.beginTransaction();
+
+final var userId = UUID.random();
+connection
+        .prepareStatement("INSERT INTO 'user' ($1, $2)")
+        .put("$1", userId)
+        .put("$2", "marcel")
+        .execute();
+
+connection
+        .prepareStatement("INSERT INTO 'note' ($1, $2, $3, $4)")
+        .put("$1", UUID.random())
+        .put("$2", userId)
+        .put("$3", "TODO")
+        .put("$4", "Prepare the talk ASAP!")
+        .execute();
+
+if (validationFails()) {
+    connection.rollback();
+    return;
+}
+
+connection.commit();
+```
+
+<!-- column: 1 -->
+
+VS
+
+<!-- column: 2 -->
+
+```java
+final var user = new User(
+        UUID.random(),
+        "marcel"
+);
+user.notes().add(
+        new Note(
+            UUID.random(),
+            user.id,
+            "TODO",
+            "Prepare the talk ASAP!"
+        )
+);
+schema.users.add(user);
+
+if (validationFails()) {
+    final var reloader = manager.createReloader();
+    reloader.reloadDeep(schema.users);
+    return;
+}        
+
+final var storer = manager.createStorer();
+storer.store(schema.users);
+storer.commit();
+```
+
+<!-- reset_layout -->
+
+<!-- end_slide -->
+
+
+## Comparison to SQL - Constraint Violations
+
+BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
+
+<!-- column_layout: [10,1,10] -->
+
+<!-- column: 0 -->
+
+```java
+connection.beginTransaction();
+
+final var userId = UUID.random();
+connection
+        .prepareStatement("INSERT INTO 'user' ($1, $2)")
+        .put("$1", userId)
+        .put("$2", "marcel")
+        .execute();
+
+connection
+        .prepareStatement("INSERT INTO 'note' ($1, $2, $3, $4)")
+        .put("$1", UUID.random())
+        .put("$2", UUID.random()) // <- THIS IS AN ERROR
+        .put("$3", "TODO")
+        .put("$4", "Prepare the talk ASAP!")
+        .execute(); // <- THIS WILL THROW AND ROLLBACK
+
+connection.commit();
+```
+
+<!-- column: 1 -->
+
+VS
+
+<!-- column: 2 -->
+
+```java
+final var user = new User(
+        UUID.random(),
+        "marcel"
+);
+user.notes().add(
+        new Note(
+            UUID.random(),
+            UUID.random(),  // <- THIS IS AN ERROR
+            "TODO",
+            "Prepare the talk ASAP!"
+        )
+);
+schema.users.add(user);
+
+final var storer = manager.createStorer();
+storer.store(schema.users);
+storer.commit(); // <- SUCCESS, WE COMMITTED EVERYTHING! NO CONSTRAINT VIOLATION???
+```
+
+<!-- reset_layout -->
+
+<!-- end_slide -->
+ 
