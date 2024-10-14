@@ -15,6 +15,7 @@ A relational in-memory database that doesn't use SQL
   * ...
 * No database server, everything is in-process
 * Have as much data as possible in-memory
+* Replaces the need for a separate ORM
 
 <!-- end_slide -->
 
@@ -35,17 +36,10 @@ A relational in-memory database that doesn't use SQL
 * **You have almost total control over everything that happens**
 * No traditional transactions on the domain object level
 * No traditional database constraints
+* No built-in locking
 * Any mutations affect the live data
 * No easy insight into the database contents from outside
 * Migrations are somewhat harder over time
-
-<!-- end_slide -->
-
-## Usecases
-
-* Applications with rather small databases
-* Single user applications (Desktop / companion servers)
-* Read-Heavy multi user applications
 
 <!-- end_slide -->
 
