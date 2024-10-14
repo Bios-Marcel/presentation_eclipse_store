@@ -46,7 +46,7 @@ public class User extends TransactionalObject {
         return this.id;
     }
 
-    public List<Note> getNotes() {
+    public List<Note> notes() {
         requireReadAccess();
         return this.immutableReferences.notes;
     }

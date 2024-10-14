@@ -1,7 +1,6 @@
 /**
  * Enthält sämtlichen Code bezüglich Storage von
- * {@link link.biosmarcel.model.DomainObject DomainObjects}, Locking und
- * {@link link.biosmarcel.presentation.persistence.Transaction Transaktionen}.
+ * Entities, Locking und {@link link.biosmarcel.presentation.persistence.Transaction Transaktionen}.
  *
  * <p>Dies beinhaltet unter anderem auch transaktionale Implementationen von Collections:
  * <ul>
@@ -16,5 +15,4 @@
  * {@link link.biosmarcel.presentation.persistence.TransactionalList} anpassen um die unterliegende Collection anpassbar
  * zu machen.
  */
-@org.eclipse.jdt.annotation.NonNullByDefault
 package link.biosmarcel.presentation.persistence;

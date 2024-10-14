@@ -21,6 +21,7 @@ import java.util.HashSet;
  * sich intern, sobald es eine Änderung an sich selbst bemerkt. Dies ist nötig, da der Live-Datenbestand verändert wird
  * und wir niemals auf Kopien der Daten arbeiten.
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 public final class Transaction
 {
   private final @Nullable Storer   storer;

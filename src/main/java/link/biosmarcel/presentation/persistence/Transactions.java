@@ -7,6 +7,7 @@ import org.eclipse.jdt.annotation.Nullable;
  * {@link Transactions#getTransaction()}. Dies ist nicht Teil des {@link StorageAccess}, sondern eine einzelne Klasse,
  * damit alle interessierten Instanzen einfach ohne SpringBeans und co darauf zugreifen können.
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 public final class Transactions
 {
   private static @Nullable Transaction transaction;
