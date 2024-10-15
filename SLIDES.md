@@ -2,6 +2,7 @@
 title: Eclipse Store
 sub_title: A relational in-memory database that doesn't use SQL
 theme:
+  name: light
   override:
     footer:
       style: template
@@ -9,59 +10,89 @@ theme:
       right: "{current_slide} / {total_slides}"
 ---
 
-## Concept
+Concept
+==
 
+<!-- pause -->
 * No query language, CRUD via plain Java
+<!-- pause -->
 * Data is stored in arbitrary storage backends
+<!-- pause -->
   * SQL
-  * Document databases (Mongo, Redis, ...)
+  * key-value store (Mongo, Redis, ...)
   * files (filesystem)
   * Blob storages (aws, minio, ...)
   * ...
+<!-- pause -->
 * No database server, everything is in-process
+<!-- pause -->
 * Have as much data as possible in-memory
+<!-- pause -->
 * Replaces the need for a separate ORM
 
 <!-- end_slide -->
 
-## Pros
+Pros
+==
 
+<!-- pause -->
 * **You have almost total control over everything that happens**
+<!-- pause -->
 * Extremly fast read access
+<!-- pause -->
 * Rather fast writes
+<!-- pause -->
 * Querying via Java, instead of SQL
   * It's hard to write slow code
   * Beginners can be onboarded easily
+<!-- pause -->
 * Built-in lazy loading of fields and collections
+<!-- pause -->
 * Replaces complex ORMs / cache layers
+<!-- pause -->
 * The code *CAN* be super simple (more on that later)
 
-## Cons
+Cons
+==
 
+<!-- pause -->
 * **You have almost total control over everything that happens**
+<!-- pause -->
 * No traditional transactions on the domain object level
+<!-- pause -->
 * No traditional database constraints
+<!-- pause -->
 * No built-in locking
+<!-- pause -->
 * Any mutations affect the live data
+<!-- pause -->
 * No easy insight into the database contents from outside
+<!-- pause -->
 * Migrations are somewhat harder over time
 
 <!-- end_slide -->
 
-## Basic Overview of Concepts
+Basic Overview of Concepts
+==
 
+<!-- pause -->
 * No tables, just Java objects
+<!-- pause -->
 * Custom binary serialisation format
   * Types are parsed upon server start and are written into a "type dictionary"
   * written data is chunked into binary blobs
   * Data is automagically migrated if possible
+<!-- pause -->
 * Simple `store(...), commit(), reload(...)` API
+<!-- pause -->
 * Background threads that manage lazy data references
+<!-- pause -->
 * Background threads that manage garbage in the persistent storage (due to deletions / copy on write)
 
 <!-- end_slide -->
 
-## Comparison to SQL - The Schema
+Comparison to SQL - The Schema
+==
 
 BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
 
@@ -108,7 +139,8 @@ class Schema {
 
 <!-- end_slide -->
 
-## Comparison to SQL - Inserting Data
+Comparison to SQL - Inserting Data
+==
 
 BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
 
@@ -128,7 +160,7 @@ COMMIT TRANSACTION;
 ```java
 connection.beginTransaction();
 
-final var userId = UUID.random();
+var userId = UUID.random();
 connection
         .prepareStatement("INSERT INTO 'user' ($1, $2)")
         .put("$1", userId)
@@ -153,7 +185,7 @@ VS
 <!-- column: 2 -->
 
 ```java
-final var user = new User(
+var user = new User(
         UUID.random(),
         "marcel"
 );
@@ -167,7 +199,7 @@ user.notes().add(
 );
 schema.users.add(user);
 
-final var storer = manager.createStorer();
+var storer = manager.createStorer();
 storer.store(schema.users);
 storer.commit();
 ```
@@ -176,7 +208,8 @@ storer.commit();
 
 <!-- end_slide -->
 
-## Comparison to SQL - Rollbacks
+Comparison to SQL - Rollbacks
+==
 
 BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
 
@@ -187,7 +220,7 @@ BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
 ```java
 connection.beginTransaction();
 
-final var userId = UUID.random();
+var userId = UUID.random();
 connection
         .prepareStatement("INSERT INTO 'user' ($1, $2)")
         .put("$1", userId)
@@ -217,7 +250,7 @@ VS
 <!-- column: 2 -->
 
 ```java
-final var user = new User(
+var user = new User(
         UUID.random(),
         "marcel"
 );
@@ -232,12 +265,12 @@ user.notes().add(
 schema.users.add(user);
 
 if (validationFails()) {
-    final var reloader = manager.createReloader();
+    var reloader = manager.createReloader();
     reloader.reloadDeep(schema.users);
     return;
 }        
 
-final var storer = manager.createStorer();
+var storer = manager.createStorer();
 storer.store(schema.users);
 storer.commit();
 ```
@@ -247,7 +280,8 @@ storer.commit();
 <!-- end_slide -->
 
 
-## Comparison to SQL - Constraint Violations
+Comparison to SQL - Constraint Violations
+==
 
 BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
 
@@ -258,7 +292,7 @@ BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
 ```java
 connection.beginTransaction();
 
-final var userId = UUID.random();
+var userId = UUID.random();
 connection
         .prepareStatement("INSERT INTO 'user' ($1, $2)")
         .put("$1", userId)
@@ -283,7 +317,7 @@ VS
 <!-- column: 2 -->
 
 ```java
-final var user = new User(
+var user = new User(
         UUID.random(),
         "marcel"
 );
@@ -297,7 +331,7 @@ user.notes().add(
 );
 schema.users.add(user);
 
-final var storer = manager.createStorer();
+var storer = manager.createStorer();
 storer.store(schema.users);
 storer.commit(); // <- SUCCESS, WE COMMITTED EVERYTHING! NO CONSTRAINT VIOLATION???
 ```
@@ -305,4 +339,39 @@ storer.commit(); // <- SUCCESS, WE COMMITTED EVERYTHING! NO CONSTRAINT VIOLATION
 <!-- reset_layout -->
 
 <!-- end_slide -->
- 
+
+Comparison to SQL - Type Safety
+==
+
+BEWARE, PSEUDO CODE *(Jokes on you, that's just my excuse for invalid code)*
+
+<!-- column_layout: [10,1,10] -->
+
+<!-- column: 0 -->
+
+```java
+var result = connection
+        .prepareStatement("SELECT 'name' FROM 'user' WHERE 'id' = $1")
+        .put("$1", userId)
+        .query();
+
+result.next();
+int name = result.getInt("name") // <- RUNTIME ERROR
+```
+
+<!-- column: 1 -->
+
+VS
+
+<!-- column: 2 -->
+
+```java
+var user = schema.users.stream()
+        .filter(user -> user.getId().equals(userId))
+        .getFirst();
+
+int name = user.getName(); // <- COMPILE ERROR
+```
+
+<!-- reset_layout -->
+
