@@ -1,8 +1,8 @@
 ---
 title: Eclipse Store
-sub_title: A relational in-memory database that doesn't use SQL
+sub_title: A relational in-memory database that doesn't use SQL (but it's Java)
 theme:
-  name: light
+  name: terminal-light
   override:
     footer:
       style: template
@@ -14,6 +14,8 @@ Concept
 ==
 
 <!-- pause -->
+* No database server, everything is in-process
+<!-- pause -->
 * No query language, CRUD via plain Java
 <!-- pause -->
 * Data is stored in arbitrary storage backends
@@ -23,8 +25,6 @@ Concept
   * files (filesystem)
   * Blob storages (aws, minio, ...)
   * ...
-<!-- pause -->
-* No database server, everything is in-process
 <!-- pause -->
 * Have as much data as possible in-memory
 <!-- pause -->
@@ -49,6 +49,8 @@ Pros
 * Built-in lazy loading of fields and collections
 <!-- pause -->
 * Replaces complex ORMs / cache layers
+<!-- pause -->
+* Schema, logic and data constraints are all in one place
 <!-- pause -->
 * The code *CAN* be super simple (more on that later)
 
@@ -76,7 +78,9 @@ Basic Overview of Concepts
 ==
 
 <!-- pause -->
-* No tables, just Java objects
+* No tables, just Java objects (An object graph)
+  * Supports circular references
+  * Supports collections (list, map, ...)
 <!-- pause -->
 * Custom binary serialisation format
   * Types are parsed upon server start and are written into a "type dictionary"
@@ -88,6 +92,33 @@ Basic Overview of Concepts
 * Background threads that manage lazy data references
 <!-- pause -->
 * Background threads that manage garbage in the persistent storage (due to deletions / copy on write)
+
+<!-- end_slide -->
+
+Comparison to SQL - Rough flow from object to persisted state
+==
+
+SQL
+===
+
+```mermaid +render +width:100%
+graph LR
+        create_object(Create Object)-->convert_to_sql(Convert to SQL);
+        convert_to_sql-->parse_query[Parse];
+        parse_query-->execute_query[Execute];
+        execute_query-->magic[Magic?];
+        magic-->flush[Flush];
+```
+
+Eclipse Store
+===
+
+```mermaid +render +width:100%
+graph LR
+        create_object(Create Object)-->store(Store);
+        store-->convert_to_binary(Convert to binary);
+        convert_to_binary-->flush(Flush);
+```
 
 <!-- end_slide -->
 
